@@ -26,15 +26,15 @@ The initial goal is **not** to demonstrate a universal reasoning engine. It is t
 
 ## Core hypothesis
 
-Train a reasoning model \(R\) entirely on abstract symbolic problems. Give it an evolving working state and allow the same learned computation to execute repeatedly:
+Train a reasoning model $R$ entirely on abstract symbolic problems. Give it an evolving working state and allow the same learned computation to execute repeatedly:
 
 $$
 s_{t+1}=R(s_t,m_t)
 $$
 
-where \(s_t\) is working state and \(m_t\) is optional persistent/scratch memory.
+where $s_t$ is working state and $m_t$ is optional persistent/scratch memory.
 
-The parameters of \(R\) remain fixed during inference, but execution length does not.
+The parameters of $R$ remain fixed during inference, but execution length does not.
 
 Easy problems may require:
 
@@ -48,7 +48,7 @@ $$
 R^{30}.
 $$
 
-After training, freeze \(R\) permanently.
+After training, freeze $R$ permanently.
 
 For each external representation—text, tables, diagrams, etc.—train a separate encoder:
 
@@ -56,7 +56,7 @@ $$
 E_i(x_i)\rightarrow z
 $$
 
-which maps the external problem into the representation consumed by \(R\).
+which maps the external problem into the representation consumed by $R$.
 
 The complete system is:
 
@@ -78,7 +78,7 @@ For the first experiment, keep output decoding trivial. The reasoning core shoul
 
 The critical test is **capability inheritance**.
 
-Suppose the frozen core has already learned a task family up to reasoning complexity \(d=30\).
+Suppose the frozen core has already learned a task family up to reasoning complexity $d=30$.
 
 Train a new adapter only using instances with:
 
@@ -106,7 +106,7 @@ Start with a deliberately restricted set of tasks where the underlying structure
 
 Recommended initial families are graph reachability, transitive relations, ordering constraints, shortest-path-style reasoning, simple constraint satisfaction, and rule-chain deduction.
 
-Reasoning Gym is a useful substrate because it already provides more than 100 procedurally generated task environments, deterministic generation, adjustable task complexity, and algorithmic answer verification. Its dataset abstraction exposes the question, answer, metadata, and task-specific scoring function, so the underlying generators can be adapted without adopting its natural-language representation.
+Reasoning Gym [[1]](#references) is a useful substrate because it already provides more than 100 procedurally generated task environments, deterministic generation, adjustable task complexity, and algorithmic answer verification. Its dataset abstraction exposes the question, answer, metadata, and task-specific scoring function, so the underlying generators can be adapted without adopting its natural-language representation.
 
 However, the first implementation should not simply tokenize Reasoning Gym's English questions.
 
@@ -146,13 +146,15 @@ $$
 P(\text{correct}\mid d,n,T)
 $$
 
-where \(d\) is logical depth, \(n\) is problem size, and \(T\) is allowed recurrent computation.
+where $d$ is logical depth, $n$ is problem size, and $T$ is allowed recurrent computation.
 
 This distinguishes three failure modes:
 
-insufficient learned procedure, insufficient execution time, and insufficient working memory.
+- insufficient learned procedure,
+- insufficient execution time, and
+- insufficient working memory.
 
-The core should show that increasing \(T\) improves harder problems at least over some range. Otherwise the recurrent design is not buying useful adaptive computation.
+The core should show that increasing $T$ improves harder problems at least over some range. Otherwise the recurrent design is not buying useful adaptive computation.
 
 Freeze the best checkpoint after this stage.
 
@@ -162,7 +164,7 @@ No later experiment may modify its weights.
 
 ## Phase 3: Generate equivalent multimodal presentations
 
-For each canonical problem instance \(z\), generate several surface representations of the exact same underlying structure:
+For each canonical problem instance $z$, generate several surface representations of the exact same underlying structure:
 
 $$
 z
@@ -200,7 +202,7 @@ $$
 
 The reasoning core remains frozen.
 
-Initially train adapters using only simple problems—for example \(d\le4\) and small graphs—even though the frozen core can solve substantially harder instances.
+Initially train adapters using only simple problems—for example $d\le4$ and small graphs—even though the frozen core can solve substantially harder instances.
 
 Adapters should be deliberately capacity constrained.
 
@@ -216,7 +218,7 @@ and render the reasoning core irrelevant.
 
 Useful constraints include low parameter counts, shallow architectures, restricted output-token counts, no recurrent computation in the adapter, and a fixed-size bottleneck between adapter and core.
 
-The exact restrictions should become ablations later, but Phase 1 should strongly bias toward making reasoning inside the adapter difficult.
+The exact restrictions should become ablations later, but the first prototype should strongly bias toward making reasoning inside the adapter difficult.
 
 ---
 
@@ -380,7 +382,7 @@ A_{\text{core+adapter}}(d)
 A_{\text{adapter-only}}(d).
 $$
 
-Of particular interest is \(I(d)\) for reasoning depths substantially beyond adapter training.
+Of particular interest is $I(d)$ for reasoning depths substantially beyond adapter training.
 
 Also track:
 
@@ -414,17 +416,12 @@ A particularly compelling result would be a new adapter trained on hundreds or t
 
 The project should be considered unsuccessful in its initial claim if any of the following occur:
 
-adapter-only baselines extrapolate just as well as core+adapter systems;
-
-performance stops near the maximum complexity encountered during adapter training;
-
-increasing frozen-core compute provides no benefit;
-
-large adapter capacity is required before transfer appears;
-
-random or minimally trained cores perform similarly;
-
-or every new structural family requires substantial retraining of the core.
+- adapter-only baselines extrapolate just as well as core+adapter systems;
+- performance stops near the maximum complexity encountered during adapter training;
+- increasing frozen-core compute provides no benefit;
+- large adapter capacity is required before transfer appears;
+- random or minimally trained cores perform similarly;
+- or every new structural family requires substantial retraining of the core.
 
 These outcomes would suggest that representation formation and reasoning are too entangled under the tested architecture to obtain the desired modularity.
 
@@ -466,7 +463,15 @@ It differs from conventional adapters because the adapter is not intended to add
 
 And it differs from model distillation because the primary experiment is architectural separation rather than compression.
 
-Recent work such as Universal Reasoner provides evidence that reasoning-related computation can be implemented as a lightweight module attached to frozen language models and can show cross-domain transfer, which makes the broader modularity hypothesis less speculative. Our experiment asks a different and more controlled question: whether an independently trained interface can inherit the capability of a **frozen abstract recurrent reasoner**.
+Several lines of prior work are close enough that this project builds directly on them.
+
+**Neural algorithmic reasoning.** Veličković and Blundell [[2]](#references) proposed building networks that execute classical algorithms, typically in an *encode–process–decode* form: a task-specific encoder maps raw inputs into the latent space of a shared, pretrained algorithmic "processor", whose output is decoded into an answer. This is very close to the $E_i \rightarrow R \rightarrow a$ structure above. The CLRS benchmark [[3]](#references) standardized learning such processors on 30 classical algorithms, a single generalist processor has been trained across many of them at once [[4]](#references), knowledge transfer from processors to new algorithms has been studied directly [[5]](#references), and a pretrained reasoning module has been plugged into representation learners operating on pixels [[6]](#references). The emphasis here is on a narrower, adversarial test of that idea: a deliberately capacity-constrained interface, trained only on shallow instances, measured by how much of the frozen core's deeper capability it inherits relative to interface-only controls, across several paired surface representations of identical instances.
+
+**Recurrent depth extrapolation and adaptive computation.** The core's design—one weight-tied block iterated a variable number of times—follows Universal Transformers [[7]](#references) and adaptive-computation work such as ACT [[8]](#references) and PonderNet [[9]](#references). Most directly, Schwarzschild et al. [[10]](#references) showed that recurrent networks trained on easy problems can solve harder ones by running for more iterations at test time, and Bansal et al. [[11]](#references) made this extrapolation far more robust with a "recall" connection that re-injects the input at every step and a progressive training scheme that discourages iteration-specific behavior. Phase 1 is essentially a reproduction of this result on graph reachability, and both techniques are planned for the core.
+
+**Interfaces to frozen models.** Training a new encoder to communicate with a frozen model has precedent in Frozen [[12]](#references), where a vision encoder learns to emit embeddings that a frozen language model consumes as a prefix. Universal Reasoner [[13]](#references) goes the other way, training a lightweight reasoning module whose output logits are added to those of a frozen language model, and reports transfer across domains and model sizes; this makes the broader modularity hypothesis less speculative. Our experiment asks a different and more controlled question: whether an independently trained interface can inherit the capability of a **frozen abstract recurrent reasoner**.
+
+**Comparing representations.** The Phase 6 test of substituting core states produced by one adapter for those produced by another is a form of model stitching, which Bansal, Nakkiran and Barak [[14]](#references) argue is a more functional measure of representational similarity than purely statistical comparisons.
 
 ---
 
@@ -487,3 +492,22 @@ Specifically, the new adapter should learn from simple instances, remain incapab
 If that occurs across text, tables, and diagrams, it would provide evidence that **learning to understand a representation can be meaningfully separated from learning the computation performed over it**.
 
 That would justify the much larger research program.
+
+---
+
+## References
+
+1. Z. Stojanovski et al. *Reasoning Gym: Reasoning Environments for Reinforcement Learning with Verifiable Rewards.* NeurIPS 2025. [arXiv:2505.24760](https://arxiv.org/abs/2505.24760) · [code](https://github.com/open-thought/reasoning-gym)
+2. P. Veličković and C. Blundell. *Neural Algorithmic Reasoning.* Patterns 2(7), 2021. [arXiv:2105.02761](https://arxiv.org/abs/2105.02761)
+3. P. Veličković et al. *The CLRS Algorithmic Reasoning Benchmark.* ICML 2022. [arXiv:2205.15659](https://arxiv.org/abs/2205.15659)
+4. B. Ibarz et al. *A Generalist Neural Algorithmic Learner.* LoG 2022. [arXiv:2209.11142](https://arxiv.org/abs/2209.11142)
+5. L.-P. Xhonneux, A. Deac, P. Veličković and J. Tang. *How to Transfer Algorithmic Reasoning Knowledge to Learn New Algorithms?* NeurIPS 2021. [OpenReview](https://openreview.net/forum?id=q2JWz371le)
+6. P. Veličković et al. *Reasoning-Modulated Representations.* LoG 2022. [arXiv:2107.08881](https://arxiv.org/abs/2107.08881)
+7. M. Dehghani et al. *Universal Transformers.* ICLR 2019. [arXiv:1807.03819](https://arxiv.org/abs/1807.03819)
+8. A. Graves. *Adaptive Computation Time for Recurrent Neural Networks.* 2016. [arXiv:1603.08983](https://arxiv.org/abs/1603.08983)
+9. A. Banino, J. Balaguer and C. Blundell. *PonderNet: Learning to Ponder.* 2021. [arXiv:2107.05407](https://arxiv.org/abs/2107.05407)
+10. A. Schwarzschild et al. *Can You Learn an Algorithm? Generalizing from Easy to Hard Problems with Recurrent Networks.* NeurIPS 2021. [arXiv:2106.04537](https://arxiv.org/abs/2106.04537)
+11. A. Bansal et al. *End-to-end Algorithm Synthesis with Recurrent Networks: Logical Extrapolation Without Overthinking.* NeurIPS 2022. [arXiv:2202.05826](https://arxiv.org/abs/2202.05826)
+12. M. Tsimpoukelli et al. *Multimodal Few-Shot Learning with Frozen Language Models.* NeurIPS 2021. [arXiv:2106.13884](https://arxiv.org/abs/2106.13884)
+13. J. Kim et al. *Universal Reasoner: A Single, Composable Plug-and-Play Reasoner for Frozen LLMs.* 2025. [arXiv:2505.19075](https://arxiv.org/abs/2505.19075)
+14. Y. Bansal, P. Nakkiran and B. Barak. *Revisiting Model Stitching to Compare Neural Representations.* NeurIPS 2021. [arXiv:2106.07682](https://arxiv.org/abs/2106.07682)
